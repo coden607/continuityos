@@ -30,3 +30,15 @@ def test_tag_release_is_blocked_on_browser_evidence():
     assert 'apps/web-pwa/scripts/browser-evidence.mjs' in release
     assert 'continuity verify .' in release
     assert 'services.api.main:api' in release
+
+
+def test_release_verifier_uses_isolated_build_backend():
+    verifier = Path('scripts/verify-release.sh').read_text(encoding='utf-8')
+    assert '--no-build-isolation' not in verifier
+
+
+def test_security_workflow_has_working_fail_closed_scanners():
+    workflow = Path('.github/workflows/security.yml').read_text(encoding='utf-8')
+    assert 'GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}' in workflow
+    assert 'pip-audit' in workflow
+    assert 'dependency-review-action' not in workflow
