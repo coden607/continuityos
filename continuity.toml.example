@@ -1,0 +1,21 @@
+[app]
+name = "continuity-dev"
+profile = "minimal"
+
+[runtime]
+checkpoint_dir = ".continuity/checkpoints"
+telemetry_path = ".continuity/routes.jsonl"
+memory_path = ".continuity/memory.db"
+
+# Zero-cost development candidate. Replace/add models without editing ContinuityOS core.
+[[models]]
+id = "dev-echo"
+provider = "dev"
+capabilities = ["text"]
+context_window = 1000000
+quality = 0.1
+reliability = 1.0
+cost_per_million = 0.0
+latency_ms = 0
+privacy = "local"
+max_output_tokens = 4096

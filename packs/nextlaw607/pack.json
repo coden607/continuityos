@@ -1,0 +1,32 @@
+{
+  "app": {
+    "name": "NextLaw607",
+    "description": "New York-first criminal-defense and authority-interaction reference implementation for ContinuityOS",
+    "mode": "legal",
+    "offline": true
+  },
+  "agents": [
+    "lead-defense-counsel",
+    "fourth-amendment-counsel",
+    "ny-constitution-counsel",
+    "citation-counsel",
+    "opposing-counsel",
+    "officer-lawfulness-advisor"
+  ],
+  "skills": [
+    "live-encounter-triage",
+    "traffic-stop-analysis",
+    "terry-debour-analysis",
+    "warrant-audit",
+    "interrogation-right-to-counsel",
+    "suppression-analysis"
+  ],
+  "mcp": ["courtlistener"],
+  "knowledge": ["ny-primary-law", "federal-primary-law"],
+  "guardrails": ["legal-source-verification", "no-physical-resistance", "no-fabricated-citations"],
+  "continuity": {
+    "fail_closed_on_unverified_law": true,
+    "preserve_citations_in_handoff": true,
+    "offline_last_verified_banner": true
+  }
+}

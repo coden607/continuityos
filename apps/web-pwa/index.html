@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#111111" />
+  <meta name="description" content="ContinuityOS local-first AI application control plane" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="stylesheet" href="./styles.css" />
+  <title>ContinuityOS</title>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <p class="eyebrow">CONTINUITYOS</p>
+      <h1>Build once. Swap models. Never lose the thread.</h1>
+      <p class="lede">Local-first control plane for routing, continuity, health, packs, voice, memory, MCPs and multi-model execution.</p>
+    </header>
+
+    <section class="panel" aria-labelledby="connection-title">
+      <div class="row between">
+        <div>
+          <h2 id="connection-title">Runtime</h2>
+          <p id="health-detail" class="muted">Checking API health…</p>
+        </div>
+        <span id="health-badge" class="badge">checking</span>
+      </div>
+      <label for="api-base">API base URL</label>
+      <div class="row">
+        <input id="api-base" inputmode="url" autocomplete="url" />
+        <button id="save-api" type="button">Save</button>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="execute-title">
+      <h2 id="execute-title">Execution console</h2>
+      <form id="execute-form">
+        <label for="prompt">Prompt</label>
+        <textarea id="prompt" rows="5" required placeholder="Ask the active ContinuityOS runtime…"></textarea>
+        <div class="row wrap">
+          <label class="compact">Capability
+            <select id="capability">
+              <option value="text">text</option>
+              <option value="reasoning">reasoning</option>
+            </select>
+          </label>
+          <button id="execute" type="submit">Execute</button>
+        </div>
+      </form>
+      <pre id="result" aria-live="polite">No task executed yet.</pre>
+    </section>
+
+    <section class="panel" aria-labelledby="continuity-title">
+      <h2 id="continuity-title">Continuity state</h2>
+      <div class="metrics">
+        <div><span class="metric-label">Network</span><strong id="network-state">unknown</strong></div>
+        <div><span class="metric-label">Mode</span><strong>local-first</strong></div>
+        <div><span class="metric-label">Shell</span><strong>offline-ready</strong></div>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

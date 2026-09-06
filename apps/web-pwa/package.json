@@ -1,0 +1,10 @@
+{
+  "name": "continuityos-web-pwa",
+  "private": true,
+  "version": "1.2.1",
+  "type": "module",
+  "scripts": {
+    "check": "node --check src/service-worker.js",
+    "build": "node scripts/build.mjs"
+  }
+}

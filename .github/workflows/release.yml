@@ -1,0 +1,33 @@
+name: release
+on:
+  push:
+    tags:
+      - 'v*'
+permissions:
+  contents: read
+jobs:
+  verify-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m pip install -e '.[dev]'
+      - run: pytest -q
+      - run: python -m compileall -q packages/python services
+      - run: continuity doctor
+      - run: cd apps/web-pwa && npm run build
+      - name: Build Python wheel
+        run: mkdir -p dist/python && python -m pip wheel --no-deps . -w dist/python
+      - name: Package PWA
+        run: tar -C apps/web-pwa/dist -czf dist/continuityos-pwa.tgz .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: continuityos-${{ github.ref_name }}
+          path: |
+            dist/python/*
+            dist/continuityos-pwa.tgz
