@@ -103,3 +103,14 @@ secrets = ["OPENAI_API_KEY"]
     path.write_text(path.read_text() + '\nunknown = "bad"\n')
     with pytest.raises(Exception):
         load_blueprint(path)
+
+
+def test_release_lint_contract_is_pinned_and_shared_with_local_gate():
+    import tomllib
+
+    root = Path(__file__).resolve().parents[1]
+    config = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+    assert "ruff==0.16.6" in config["project"]["optional-dependencies"]["dev"]
+    assert config["tool"]["ruff"]["lint"]["select"] == ["E4", "E7", "E9", "F821"]
+    release = (root / "scripts" / "verify-release.sh").read_text(encoding="utf-8")
+    assert "ruff check packages/python services tests" in release
