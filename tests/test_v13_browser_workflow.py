@@ -20,3 +20,11 @@ def test_browser_evidence_script_is_revision_bound_and_fail_closed():
     assert 'cls' in script
     assert 'inp_ms' in script
     assert 'process.exitCode = 1' in script
+
+
+def test_tag_release_is_blocked_on_browser_evidence():
+    release = Path('.github/workflows/release.yml').read_text(encoding='utf-8')
+    assert 'browser-evidence:' in release
+    assert 'needs: browser-evidence' in release
+    assert 'apps/web-pwa/scripts/browser-evidence.mjs' in release
+    assert 'continuity verify .' in release
