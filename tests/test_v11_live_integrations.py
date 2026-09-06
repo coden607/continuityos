@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-import io
 import json
-from email.message import Message
 from pathlib import Path
 
 import pytest
@@ -15,7 +13,7 @@ from continuityos.mcp_client import MCPClient, MCPError
 from continuityos.models import ModelCandidate, TaskRequirements
 from continuityos.providers import ProviderFleet, ProviderRequest, ProviderResult
 from continuityos.realtime import AudioChunkStream
-from continuityos.workflow import DBOSAdapter, WorkflowState
+from continuityos.workflow import DBOSAdapter
 
 
 class FakeProvider:

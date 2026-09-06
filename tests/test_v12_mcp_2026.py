@@ -1,5 +1,4 @@
 import json
-from types import SimpleNamespace
 
 from continuityos import __version__
 from continuityos.mcp import MCPServer
