@@ -4,7 +4,7 @@ from pathlib import Path
 
 from continuityos.benchmark import BenchmarkCase, BenchmarkRunner
 from continuityos.memory import MemoryRecord, SQLiteMemoryAdapter
-from continuityos.models import ModelCandidate, TaskRequirements
+from continuityos.models import ModelCandidate
 from continuityos.observability_adapters import LangfuseTracer
 from continuityos.providers import ProviderFleet, ProviderRequest, ProviderResult
 from continuityos.telemetry import RoutingTelemetry
