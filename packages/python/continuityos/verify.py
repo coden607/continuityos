@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Callable, Literal
+import subprocess
 
 from pydantic import BaseModel, Field
 
@@ -43,10 +45,30 @@ class VerificationResult(BaseModel):
 GateRunner = Callable[[Path], bool]
 
 class BrowserEvidence(BaseModel):
+    revision: str | None = None
+    captured_at: datetime | None = None
+    tool: str | None = None
     e2e_passed: bool | None = None
     accessibility_passed: bool | None = None
     pwa_passed: bool | None = None
     performance: dict[str, float] = Field(default_factory=dict)
+
+
+def _git_revision(root: Path) -> str | None:
+    try:
+        completed = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    if completed.returncode != 0:
+        return None
+    revision = completed.stdout.strip()
+    return revision or None
 
 
 def browser_evidence_runners(root: str | Path, metadata: dict) -> dict[VerificationGate, GateRunner]:
@@ -55,16 +77,26 @@ def browser_evidence_runners(root: str | Path, metadata: dict) -> dict[Verificat
         return {}
     import json
     evidence = BrowserEvidence.model_validate(json.loads(evidence_path.read_text(encoding="utf-8")))
+    root_path = Path(root)
+    current_revision = _git_revision(root_path)
+    provenance_valid = bool(
+        evidence.revision
+        and evidence.captured_at is not None
+        and evidence.tool
+        and (current_revision is None or evidence.revision == current_revision)
+    )
     runners: dict[VerificationGate, GateRunner] = {}
     if evidence.e2e_passed is not None:
-        runners[VerificationGate.E2E] = lambda path: evidence.e2e_passed is True
+        runners[VerificationGate.E2E] = lambda path: provenance_valid and evidence.e2e_passed is True
     if evidence.accessibility_passed is not None:
-        runners[VerificationGate.ACCESSIBILITY] = lambda path: evidence.accessibility_passed is True
+        runners[VerificationGate.ACCESSIBILITY] = lambda path: provenance_valid and evidence.accessibility_passed is True
     if evidence.pwa_passed is not None:
-        runners[VerificationGate.PWA] = lambda path: evidence.pwa_passed is True
+        runners[VerificationGate.PWA] = lambda path: provenance_valid and evidence.pwa_passed is True
     budgets = metadata.get("performance_budgets") or {}
     if budgets:
         def performance_runner(path: Path) -> bool:
+            if not provenance_valid:
+                return False
             for name, limit in budgets.items():
                 value = evidence.performance.get(name)
                 if value is None or value > float(limit):
