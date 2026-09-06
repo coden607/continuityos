@@ -7,6 +7,7 @@ def test_browser_release_evidence_workflow_is_wired():
     assert './scripts/verify-release.sh' in workflow
     assert 'actions/upload-artifact@v4' in workflow
     assert 'playwright install --with-deps chromium' in workflow
+    assert 'services.api.main:api' in workflow
 
 
 def test_browser_evidence_script_is_revision_bound_and_fail_closed():
@@ -28,3 +29,4 @@ def test_tag_release_is_blocked_on_browser_evidence():
     assert 'needs: browser-evidence' in release
     assert 'apps/web-pwa/scripts/browser-evidence.mjs' in release
     assert 'continuity verify .' in release
+    assert 'services.api.main:api' in release
