@@ -7,7 +7,7 @@ cd "$ROOT"
 python -m ruff check packages/python services tests
 python -m pytest -q
 python -m compileall -q packages/python services
-python -m pip install -e . --no-build-isolation >/dev/null
+python -m pip install -e . >/dev/null
 npm --prefix apps/web-pwa run build
 node --check apps/web-pwa/src/app.js
 node --check apps/web-pwa/src/service-worker.js
