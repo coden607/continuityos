@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+python -m ruff check packages/python services tests
 python -m pytest -q
 python -m compileall -q packages/python services
 python -m pip install -e . --no-build-isolation >/dev/null
