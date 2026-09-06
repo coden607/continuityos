@@ -33,6 +33,10 @@ class DispatchTarget(BaseModel):
     privacy: Literal["local", "private_cloud", "cloud"] = "local"
     context_window: int | None = Field(default=None, gt=0)
     reference: str | None = None
+    outputs: set[str] = Field(default_factory=set)
+    languages: set[str] = Field(default_factory=set)
+    frameworks: set[str] = Field(default_factory=set)
+    verification: set[str] = Field(default_factory=set)
 
     @classmethod
     def from_model(cls, model: ModelCandidate) -> "DispatchTarget":
@@ -80,6 +84,12 @@ class DispatchRequirements(BaseModel):
     context_needed: int = Field(default=0, ge=0)
     prefer_zero_token: bool = True
     prefer_low_latency: bool = False
+    min_quality: float = Field(default=0, ge=0, le=1)
+    min_reliability: float = Field(default=0, ge=0, le=1)
+    required_outputs: set[str] = Field(default_factory=set)
+    languages: set[str] = Field(default_factory=set)
+    frameworks: set[str] = Field(default_factory=set)
+    required_verification: set[str] = Field(default_factory=set)
 
 
 class DispatchDecision(BaseModel):
@@ -110,6 +120,16 @@ class CapabilityDispatcher:
         if target.kind == TargetKind.MODEL and req.context_needed:
             if target.context_window is None or target.context_window < req.context_needed:
                 return False
+        if target.quality < req.min_quality or target.reliability < req.min_reliability:
+            return False
+        if not req.required_outputs.issubset(target.outputs):
+            return False
+        if not req.languages.issubset(target.languages):
+            return False
+        if not req.frameworks.issubset(target.frameworks):
+            return False
+        if not req.required_verification.issubset(target.verification):
+            return False
         return True
 
     def _score(self, target: DispatchTarget, req: DispatchRequirements) -> tuple[float, list[str]]:
