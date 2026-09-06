@@ -6,7 +6,65 @@ on:
 permissions:
   contents: read
 jobs:
+  browser-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev]'
+      - run: npm --prefix apps/web-pwa install --no-audit --no-fund
+      - run: npm --prefix apps/web-pwa install --no-save --no-audit --no-fund playwright @axe-core/playwright
+      - run: npx --prefix apps/web-pwa playwright install --with-deps chromium
+      - run: npm --prefix apps/web-pwa run build
+      - name: Start API and PWA servers
+        run: |
+          python -m uvicorn services.api.main:app --host 127.0.0.1 --port 8000 > /tmp/continuity-api.log 2>&1 &
+          python -m http.server 4173 --bind 127.0.0.1 --directory apps/web-pwa/dist > /tmp/continuity-web.log 2>&1 &
+          for i in $(seq 1 30); do
+            api=0; web=0
+            curl --fail --silent http://127.0.0.1:8000/status/health >/dev/null && api=1 || true
+            curl --fail --silent http://127.0.0.1:4173/ >/dev/null && web=1 || true
+            if [ "$api" = 1 ] && [ "$web" = 1 ]; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/continuity-api.log
+          cat /tmp/continuity-web.log
+          exit 1
+      - name: Declare browser verification contract
+        run: |
+          mkdir -p .continuity
+          cat > .continuity/verification.json <<'JSON'
+          {
+            "gates": ["e2e", "accessibility", "performance", "pwa"],
+            "commands": {},
+            "performance_budgets": {"lcp_ms": 2500, "cls": 0.1, "inp_ms": 200}
+          }
+          JSON
+      - name: Capture browser evidence
+        continue-on-error: true
+        run: node apps/web-pwa/scripts/browser-evidence.mjs
+      - name: Verify browser gates fail closed
+        run: continuity verify .
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: continuityos-browser-evidence-${{ github.sha }}
+          path: |
+            .continuity/browser-evidence.json
+            .continuity/verification.json
+            /tmp/continuity-api.log
+            /tmp/continuity-web.log
+          if-no-files-found: warn
+          include-hidden-files: true
   verify-and-package:
+    needs: browser-evidence
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,6 +75,7 @@ jobs:
         with:
           node-version: '22'
       - run: python -m pip install -e '.[dev]'
+      - run: python -m ruff check packages/python services tests
       - run: pytest -q
       - run: python -m compileall -q packages/python services
       - run: continuity doctor
