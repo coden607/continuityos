@@ -165,6 +165,8 @@ class AppGenerator:
     @staticmethod
     def _slug(name: str) -> str:
         slug = "".join(ch.lower() if ch.isalnum() else "-" for ch in name).strip("-")
-        while "--" in slug: slug = slug.replace("--", "-")
-        if not slug: raise ValueError("app name must contain letters or numbers")
+        while "--" in slug:
+            slug = slug.replace("--", "-")
+        if not slug:
+            raise ValueError("app name must contain letters or numbers")
         return slug
