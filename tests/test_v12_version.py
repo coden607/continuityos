@@ -2,8 +2,6 @@ import json
 from pathlib import Path
 
 import continuityos
-from continuityos.mcp import MCPServer
-from continuityos.mcp_client import MCPClient
 
 ROOT = Path(__file__).resolve().parents[1]
 
