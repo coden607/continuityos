@@ -21,5 +21,6 @@ def test_cloudflare_api_deploy_is_manual_only() -> None:
     workflow = (ROOT / ".github/workflows/deploy-api.yml").read_text()
     assert "workflow_dispatch:" in workflow
     assert "push:" not in workflow
+    assert "cp wrangler.api.jsonc wrangler.jsonc" in workflow
     assert "pywrangler deploy --dry-run" in workflow
     assert "github.ref == 'refs/heads/main'" in workflow
