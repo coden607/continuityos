@@ -6,6 +6,7 @@ on:
     - cron: '17 7 * * 1'
 permissions:
   contents: read
+  pull-requests: read
 jobs:
   gitleaks:
     runs-on: ubuntu-latest
@@ -14,8 +15,10 @@ jobs:
         with:
           fetch-depth: 0
       - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   dependency-review:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && vars.DEPENDENCY_REVIEW_ENABLED == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
