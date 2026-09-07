@@ -23,8 +23,10 @@ jobs:
           python-version: '3.13'
       - name: Install uv
         run: python -m pip install uv
+      - name: Stage API Wrangler config
+        run: cp wrangler.api.jsonc wrangler.jsonc
       - name: Validate Python Worker bundle
-        run: uv run --python 3.13 --with workers-py --with workers-runtime-sdk pywrangler deploy --dry-run --config wrangler.api.jsonc
+        run: uv run --python 3.13 --with workers-py --with workers-runtime-sdk pywrangler deploy --dry-run
 
   deploy:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
@@ -44,5 +46,7 @@ jobs:
           test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "CLOUDFLARE_ACCOUNT_ID is not configured"; exit 1; }
       - name: Install uv
         run: python -m pip install uv
+      - name: Stage API Wrangler config
+        run: cp wrangler.api.jsonc wrangler.jsonc
       - name: Deploy ContinuityOS API Worker
-        run: uv run --python 3.13 --with workers-py --with workers-runtime-sdk pywrangler deploy --strict --config wrangler.api.jsonc
+        run: uv run --python 3.13 --with workers-py --with workers-runtime-sdk pywrangler deploy --strict
