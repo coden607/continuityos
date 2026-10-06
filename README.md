@@ -186,3 +186,7 @@ Run the same local gate used before cutting a release:
 ```
 
 See `docs/ARCHITECTURE.md` and `SECURITY.md` for invariants and trust boundaries.
+
+## License
+
+[MIT](LICENSE). ContinuityOS is open source; hosted integrations are optional and never required to run the core runtime.
