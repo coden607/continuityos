@@ -21,5 +21,5 @@ button { border: 0; border-radius: 10px; padding: 11px 18px; font-weight: 700; c
 pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 16px; border-radius: 12px; min-height: 90px; background: color-mix(in srgb, CanvasText 8%, Canvas); }
 .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
 .metrics > div { padding: 14px; border: 1px solid color-mix(in srgb, CanvasText 14%, transparent); border-radius: 12px; }
-.metric-label { display: block; font-size: .78rem; opacity: .58; margin-bottom: 5px; }
-@media (max-width: 620px) { .shell { width: min(100% - 22px, 920px); padding-top: 30px; } .row:not(.wrap) { align-items: stretch; } .row:not(.between) { flex-direction: column; } button { width: 100%; } }
+.metric-label { display: block; font-size: .75rem; opacity: .6; margin-bottom: 5px; }
+@media (max-width: 600px) { .shell { width: min(100% - 20px, 920px); padding-top: 28px; } .panel { padding: 16px; } .row:not(.wrap) { align-items: stretch; } }

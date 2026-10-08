@@ -1,70 +1,68 @@
-# ContinuityOS Architecture
+# ContinuityOS v1.2 Architecture
 
-ContinuityOS is a local-first application operating layer. The core is intentionally provider-neutral: providers, MCPs, memory systems, voice engines and domain behavior are registered through contracts and packs rather than imported into business logic.
+ContinuityOS is an adapter-driven, local-first AI application operating layer. The core remains useful with no paid services and no optional AI SDKs installed.
 
-## Execution plane
+## Execution path
 
-`RuntimeOrchestrator.execute()` is the canonical task path:
+```text
+Task
+ -> Guardrail policies
+ -> Context-pressure evaluation
+ -> Checkpoint when needed
+ -> Capability/model routing
+ -> Healthy provider execution
+ -> Failover on transient failure
+ -> Routing telemetry
+ -> Memory persistence
+ -> Response
+```
 
-1. deterministic guardrail evaluation;
-2. context-pressure decision;
-3. checkpoint creation when pressure requires it;
-4. health/capability/context-aware candidate routing;
-5. live provider fleet execution with bounded failover;
-6. health degradation/quarantine feedback on provider failure;
-7. routing telemetry (success, latency, tokens, cost);
-8. result persistence to configured memory;
-9. typed execution result.
+`RuntimeOrchestrator` is the canonical model-execution path. CLI/API surfaces should reuse it rather than inventing parallel execution logic.
 
-The CLI and FastAPI `/execute` surface both use this same runtime factory/path when a profile is supplied.
+## Capability dispatch
 
-## Token Spin / capability dispatch
+Not every task should invoke a model. `CapabilityDispatcher` ranks models, skills, MCPs, tools and agents using capability fit, health, privacy, quality, reliability, latency and token cost. A zero-token local capability can beat a model when it satisfies the same requirement.
 
-Model routing and cross-capability dispatch are distinct:
+## Continuity / Token Spin
 
-- `CapabilityDispatcher` ranks models, skills, MCPs, tools and agents and can prefer a zero-token local capability before calling an LLM.
-- `Router` ranks model candidates by capability fit, reliability, quality, privacy, latency, cost and context fit.
-- At handoff pressure the runtime filters toward a larger-context candidate when possible.
-- Candidate `id` is a stable routing/telemetry alias; candidate `model` is the provider-facing name. That allows switching an alias from one hosted/local model to another without discarding learned outcomes.
-- `RoutingTelemetry` records outcomes and `RoutingLearner` computes evidence-based recommendations.
+Context pressure is evaluated before execution. Low pressure proceeds normally; rising pressure triggers compression/checkpoint behavior. Handoff or emergency pressure increases the required context beyond the current model's window so the router selects a larger-context healthy candidate when one exists. Structured Context Capsules and receiver acknowledgement verification preserve objective, requirements, hard constraints and next action across model changes.
 
-## Continuity
+## Routing identity and learning
 
-`ContextBudget` drives normal/compress/checkpoint/handoff/emergency actions. `ContextCapsule` is the structured handoff/checkpoint unit and preserves objective, requirements, hard constraints, artifacts, citations and next action. Compression is field-aware; critical requirements/constraints are preserved ahead of low-value history.
+A candidate `id` is a stable logical routing identity. Its provider-facing `model` may change independently. Routing telemetry records task type, success, latency, tokens and cost against the stable identity. Learning updates recommendations/evidence only; it never silently rewrites source code or policy.
 
-## Reliability
+## Reliability and self-healing
 
-Health states are healthy, degraded, unhealthy, quarantined and recovering. A transient provider failure degrades the provider and skips it for the current execution; repeated failures can quarantine it. `SelfHealingSupervisor` may run bounded probes/healers and restore a component only after a successful post-heal probe. Code mutation is intentionally outside this runtime loop.
+Health probes feed a registry. A transient provider failure degrades the candidate and removes it from the current request; repeated failures can quarantine it. Bounded recovery actions may probe, retry or restore a component. Successful recovery makes it routable again. Production code mutation remains subject to Git/CI review.
 
-## Persistence
+## Runtime profiles
 
-The zero-cost fallback uses SQLite/file storage for memory, checkpoints and telemetry under `.continuity/`. Optional adapters connect Mem0, Graphiti and DBOS. `.continuity/` is never committed.
+TOML profiles describe the app, providers, candidates and packs. The minimal profile uses `dev-echo`, while optional profiles can activate LiteLLM or future provider adapters. Domain packs carry agents, skills, MCP definitions, guardrails, schemas, knowledge and UI metadata.
 
-## MCP
+## Persistence and memory
 
-The default MCP client follows the current stateless request model: protocol/method/name/client metadata is carried on each request and no mandatory session initialization is assumed. `server/discover` is supported, and an explicit `legacy_initialize()` compatibility method remains for older MCP servers.
+The guaranteed local path uses SQLite and `.continuity/` files. Optional Mem0, Graphiti and DBOS adapters sit behind interfaces. `.continuity/` is always treated as sensitive runtime state and is ignored by Git.
 
-## Voice
+## MCP boundary
 
-Voice is split into STT, TTS and realtime transport:
+The default client follows the stateless MCP 2026 request model: self-describing requests, protocol/method headers and client metadata on each call, with optional `server/discover`. Legacy initialize/SSE support exists only as a compatibility path for older servers.
 
-- `whisper.cpp` adapter interface for local STT;
-- Piper adapter for local TTS;
-- Pipecat-compatible realtime interface;
-- streaming audio primitive for integration tests/pipelines.
+## Voice boundary
 
-## Guardrails
+Speech interfaces are provider-neutral. whisper.cpp and Piper are local STT/TTS choices; Pipecat-compatible streaming primitives support richer realtime pipelines. No cloud voice provider is required for the core to start.
 
-Deterministic application policy remains the base layer. Optional NeMo integration sits behind the same guardrail contract. Provider/model output cannot directly bypass tool authorization. Domain packs add stricter policies.
+## Observability
 
-## App/pack boundary
+Telemetry is vendor-neutral at the core. OpenTelemetry/Langfuse exporters are optional. Traces may include prompts or tool inputs, so production exporters must follow app privacy policy and redaction requirements.
 
-`continuity new` creates a runnable app with `continuity.toml`, local-state ignore rules and a domain pack. `PackLoader` accepts the generic generated manifest and richer nested domain manifests (such as NextLaw607) without changing the core runtime.
+## PWA boundary
 
-## Deployment
+The minimal PWA is browser-native JavaScript with no npm download required for its build. It exposes health and an execution console and caches the application shell offline. React/Vite may be added as an optional richer application blueprint without becoming a prerequisite for minimal development.
 
-- Base runtime can run directly with Python or Docker Compose.
-- Minimal PWA is dependency-free at runtime/build time and communicates with the API.
-- GitHub Actions verify Python, PWA, security and container builds.
-- Cloudflare Pages deployment is opt-in/manual and requires configured secrets.
-- Hosted model/observability/memory services remain optional.
+## Deployment boundary
+
+Docker/Compose are provided for the API. GitHub Actions verifies Python, security, container and release artifacts. Cloudflare Pages deployment is opt-in and credential-gated; normal pushes do not deploy or incur a hosting requirement.
+
+## Integration boundaries
+
+Optional integrations include LiteLLM, Mem0, Graphiti, NeMo Guardrails, DBOS, OpenTelemetry, Langfuse, Pipecat, whisper.cpp, Piper and arbitrary MCP servers. Each is behind an interface so a superior future implementation can replace it without changing app business logic.

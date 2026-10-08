@@ -17,6 +17,7 @@ class Capability(str, Enum):
     RERANK = "rerank"
     BROWSER = "browser"
     MCP = "mcp"
+    CODE = "code"
 
 
 class ContinuityAction(str, Enum):

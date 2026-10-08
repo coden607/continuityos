@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 import typer
@@ -8,6 +9,7 @@ import typer
 from . import __version__
 from .defaults import default_candidates
 from .generator import AppGenerator
+from .blueprint import load_blueprint
 from .health import HealthRegistry
 from .models import Capability, ContextBudget, TaskRequirements
 from .router import Router
@@ -21,6 +23,7 @@ from .runtime import ExecutionRequest, RuntimeOrchestrator
 from .config import load_config
 from .runtime_factory import build_runtime
 from .pack_loader import PackLoader
+from .verify import VerificationContract, VerificationGate, VerificationRunner, browser_evidence_runners
 
 app = typer.Typer(help="ContinuityOS control CLI")
 secrets_app = typer.Typer(help="Store and sync secrets without printing values")
@@ -62,9 +65,57 @@ def context_action(limit: int = typer.Option(..., "--limit"), used: int = typer.
 
 
 @app.command("new")
-def new_app(name: str, template: str = "generic", destination: Path = Path("."), force: bool = False) -> None:
-    generated = AppGenerator(destination).create(name, template=template, force=force)
+def new_app(
+    name: str,
+    template: str = "generic",
+    destination: Path = Path("."),
+    force: bool = False,
+    blueprint: Path | None = typer.Option(None, "--blueprint", exists=True, dir_okay=False, readable=True),
+) -> None:
+    generator = AppGenerator(destination)
+    generated = generator.create_from_blueprint(load_blueprint(blueprint), force=force) if blueprint else generator.create(name, template=template, force=force)
     typer.echo(str(generated.root))
+
+
+@app.command("blueprint-check")
+def blueprint_check(path: Path = typer.Argument(..., exists=True, dir_okay=False, readable=True)) -> None:
+    bp = load_blueprint(path)
+    typer.echo(json.dumps({"valid": True, "app": bp.app.name, "domain": bp.app.domain, "version": bp.app.version, "gates": bp.verification.gates}, indent=2))
+
+
+@app.command("verify")
+def verify_app(root: Path = typer.Argument(Path("."), exists=True, file_okay=False, readable=True)) -> None:
+    metadata_path = root / ".continuity" / "verification.json"
+    if not metadata_path.is_file():
+        typer.echo(json.dumps({"passed": False, "error": "missing .continuity/verification.json"}, indent=2))
+        raise typer.Exit(code=1)
+    try:
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        contract = VerificationContract(gates=[VerificationGate(item) for item in metadata.get("gates", [])])
+        commands = metadata.get("commands", {})
+        if not isinstance(commands, dict):
+            raise ValueError("verification commands must be an object")
+    except (ValueError, TypeError, json.JSONDecodeError) as exc:
+        typer.echo(json.dumps({"passed": False, "error": f"invalid verification metadata: {exc}"}, indent=2))
+        raise typer.Exit(code=1)
+
+    def command_runner(command: str):
+        def run(path: Path) -> bool:
+            completed = subprocess.run(command, cwd=path, shell=True, capture_output=True, text=True)
+            return completed.returncode == 0
+        return run
+
+    runners = {
+        gate: command_runner(command)
+        for gate in contract.gates
+        if (command := commands.get(gate.value))
+    }
+    for gate, runner in browser_evidence_runners(root, metadata).items():
+        runners.setdefault(gate, runner)
+    result = VerificationRunner(runners).run(root, contract)
+    typer.echo(json.dumps({"passed": result.passed, "results": [item.model_dump(mode="json") for item in result.results]}, indent=2))
+    if not result.passed:
+        raise typer.Exit(code=1)
 
 
 @app.command("repo-bootstrap")

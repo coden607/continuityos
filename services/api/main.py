@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from continuityos import __version__
@@ -23,6 +24,12 @@ from continuityos.config import load_config
 from continuityos.runtime_factory import build_runtime
 
 api = FastAPI(title="ContinuityOS API", version=__version__)
+api.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://127.0.0.1:4173", "http://localhost:4173"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Accept"],
+)
 health_registry = HealthRegistry()
 router = Router(default_candidates(), health_registry)
 
